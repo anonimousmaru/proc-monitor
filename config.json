@@ -1,0 +1,8 @@
+{
+    "cpu_threshold": 50.0,
+    "ram_threshold": 10.0,
+    "check_interval": 0.3,
+    "output_file": "resource_report.json",
+    "track_cpu": true,
+    "track_ram": true
+}
