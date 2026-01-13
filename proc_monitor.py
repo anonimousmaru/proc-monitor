@@ -4,6 +4,10 @@ Proc-Monitor - Process Resource Monitor
 No external dependencies required! Works with standard Python libraries only.
 Monitors high CPU/RAM processes and identifies their parent services.
 
+Supports two modes:
+- threshold: Capture all processes above CPU/RAM thresholds
+- top_n: Capture top N processes by CPU/RAM usage
+
 GitHub: https://github.com/cagatayuresin/proc-monitor
 Usage: sudo python3 proc_monitor.py
 
@@ -22,6 +26,8 @@ from collections import defaultdict
 # DEFAULT CONFIGURATION (overridden by config.json if present)
 # ============================================================================
 DEFAULT_CONFIG = {
+    "mode": "threshold",          # "threshold" or "top_n"
+    "top_n": 5,                   # Number of top processes to track (for top_n mode)
     "cpu_threshold": 50.0,        # CPU usage threshold (percentage)
     "ram_threshold": 10.0,        # RAM usage threshold (percentage)
     "check_interval": 0.3,        # Check interval in seconds
@@ -54,6 +60,8 @@ def load_config():
 # Load config at startup
 CONFIG = load_config()
 
+MODE = CONFIG["mode"]
+TOP_N = CONFIG["top_n"]
 CPU_THRESHOLD = CONFIG["cpu_threshold"]
 RAM_THRESHOLD = CONFIG["ram_threshold"]
 CHECK_INTERVAL = CONFIG["check_interval"]
@@ -103,7 +111,6 @@ def get_process_stat(pid):
     
     try:
         # The comm field (process name) can contain spaces and parentheses
-        # Format: pid (comm) state ppid ...
         start = content.find('(')
         end = content.rfind(')')
         
@@ -118,9 +125,9 @@ def get_process_stat(pid):
             'name': name,
             'state': rest[0],
             'ppid': int(rest[1]),
-            'utime': int(rest[11]),      # User mode ticks
-            'stime': int(rest[12]),      # Kernel mode ticks
-            'starttime': int(rest[19]),  # Start time (ticks after boot)
+            'utime': int(rest[11]),
+            'stime': int(rest[12]),
+            'starttime': int(rest[19]),
         }
     except (IndexError, ValueError):
         return None
@@ -299,8 +306,10 @@ def save_report():
     report = {
         'generated_at': datetime.now().strftime("%Y-%m-%d %H:%M:%S"),
         'config': {
-            'cpu_threshold': CPU_THRESHOLD,
-            'ram_threshold': RAM_THRESHOLD,
+            'mode': MODE,
+            'top_n': TOP_N if MODE == 'top_n' else None,
+            'cpu_threshold': CPU_THRESHOLD if MODE == 'threshold' else None,
+            'ram_threshold': RAM_THRESHOLD if MODE == 'threshold' else None,
             'check_interval': CHECK_INTERVAL
         },
         'summary': {
@@ -330,14 +339,154 @@ def print_header():
     print("  PROC-MONITOR - Process Resource Monitor")
     print("  https://github.com/cagatayuresin/proc-monitor")
     print("="*70)
-    print(f"  CPU Threshold : {CPU_THRESHOLD}%")
-    print(f"  RAM Threshold : {RAM_THRESHOLD}%")
+    print(f"  Mode          : {MODE.upper()}")
+    if MODE == 'threshold':
+        print(f"  CPU Threshold : {CPU_THRESHOLD}%")
+        print(f"  RAM Threshold : {RAM_THRESHOLD}%")
+    else:
+        print(f"  Top N         : {TOP_N}")
     print(f"  Check Interval: {CHECK_INTERVAL}s")
     print(f"  CPU Cores     : {NUM_CPUS}")
     print(f"  Tracking      : {'CPU ' if TRACK_CPU else ''}{'RAM' if TRACK_RAM else ''}")
     print(f"  Output File   : {OUTPUT_FILE}")
     print("="*70)
     print("Press CTRL+C to stop and generate report.\n")
+
+
+def build_process_info(pid, stat, cpu_percent, ram_bytes, ram_percent, triggered_by):
+    """Build a log entry for a process."""
+    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
+    cmdline = get_process_cmdline(pid)
+    user = get_process_user(pid)
+    service = get_systemd_service(pid)
+    parent_chain = get_parent_chain(pid)
+    
+    return {
+        'timestamp': now,
+        'pid': pid,
+        'ppid': stat['ppid'],
+        'name': stat['name'],
+        'cpu_percent': round(cpu_percent, 2),
+        'ram_percent': round(ram_percent, 2),
+        'ram_bytes': ram_bytes,
+        'ram_human': format_bytes(ram_bytes),
+        'cmdline': cmdline,
+        'user': user,
+        'service': service,
+        'parent_chain': [{'pid': p, 'name': n} for p, n in parent_chain],
+        'triggered_by': triggered_by
+    }
+
+
+def print_process_info(log_entry):
+    """Print process info to console."""
+    trigger_str = '/'.join(log_entry['triggered_by'])
+    parent_chain = log_entry['parent_chain']
+    parent_info = ' -> '.join(f"{p['name']}({p['pid']})" for p in parent_chain[:3])
+    
+    print(f"[{log_entry['timestamp']}] [{trigger_str}] {log_entry['name']} (PID:{log_entry['pid']})")
+    print(f"    CPU: {log_entry['cpu_percent']:.1f}% | RAM: {log_entry['ram_percent']:.1f}% ({log_entry['ram_human']})")
+    print(f"    Service: {log_entry['service']}")
+    print(f"    User: {log_entry['user']}")
+    print(f"    Chain: {parent_info}")
+    cmdline = log_entry['cmdline']
+    print(f"    Cmd: {cmdline[:80]}{'...' if len(cmdline) > 80 else ''}")
+    print()
+
+
+def monitor_threshold(pids, current_time, total_cpu_delta):
+    """Monitor using threshold mode - capture all above threshold."""
+    for pid in pids:
+        stat = get_process_stat(pid)
+        if not stat:
+            continue
+        
+        triggered_by = []
+        cpu_percent = 0.0
+        ram_bytes, ram_percent = 0, 0.0
+        
+        if TRACK_CPU:
+            cpu_percent = calculate_cpu_percent(pid, stat, current_time, total_cpu_delta)
+            if cpu_percent > CPU_THRESHOLD:
+                triggered_by.append('CPU')
+        
+        if TRACK_RAM:
+            ram_bytes, ram_percent = get_process_memory(pid)
+            if ram_percent > RAM_THRESHOLD:
+                triggered_by.append('RAM')
+        
+        if triggered_by:
+            # Get memory if not already fetched
+            if not TRACK_RAM:
+                ram_bytes, ram_percent = get_process_memory(pid)
+            # Get CPU if not already fetched
+            if not TRACK_CPU:
+                cpu_percent = calculate_cpu_percent(pid, stat, current_time, total_cpu_delta)
+            
+            log_entry = build_process_info(pid, stat, cpu_percent, ram_bytes, ram_percent, triggered_by)
+            captured_processes.append(log_entry)
+            print_process_info(log_entry)
+
+
+def monitor_top_n(pids, current_time, total_cpu_delta):
+    """Monitor using top_n mode - capture top N processes."""
+    process_data = []
+    
+    for pid in pids:
+        stat = get_process_stat(pid)
+        if not stat:
+            continue
+        
+        cpu_percent = 0.0
+        ram_bytes, ram_percent = 0, 0.0
+        
+        if TRACK_CPU:
+            cpu_percent = calculate_cpu_percent(pid, stat, current_time, total_cpu_delta)
+        
+        if TRACK_RAM:
+            ram_bytes, ram_percent = get_process_memory(pid)
+        
+        # Skip kernel threads and very low usage processes
+        if cpu_percent < 0.1 and ram_percent < 0.1:
+            continue
+        
+        process_data.append({
+            'pid': pid,
+            'stat': stat,
+            'cpu_percent': cpu_percent,
+            'ram_bytes': ram_bytes,
+            'ram_percent': ram_percent
+        })
+    
+    # Get top N by CPU
+    if TRACK_CPU:
+        top_cpu = sorted(process_data, key=lambda x: x['cpu_percent'], reverse=True)[:TOP_N]
+        for proc in top_cpu:
+            if proc['cpu_percent'] > 0.1:  # Only log if meaningful
+                log_entry = build_process_info(
+                    proc['pid'], proc['stat'], proc['cpu_percent'],
+                    proc['ram_bytes'], proc['ram_percent'], ['TOP_CPU']
+                )
+                captured_processes.append(log_entry)
+                print_process_info(log_entry)
+    
+    # Get top N by RAM
+    if TRACK_RAM:
+        top_ram = sorted(process_data, key=lambda x: x['ram_percent'], reverse=True)[:TOP_N]
+        for proc in top_ram:
+            if proc['ram_percent'] > 0.1:  # Only log if meaningful
+                # Check if already logged as TOP_CPU
+                already_logged = any(
+                    p['pid'] == proc['pid'] and 'TOP_CPU' in p['triggered_by']
+                    for p in captured_processes[-TOP_N*2:]  # Check recent entries
+                )
+                if not already_logged:
+                    log_entry = build_process_info(
+                        proc['pid'], proc['stat'], proc['cpu_percent'],
+                        proc['ram_bytes'], proc['ram_percent'], ['TOP_RAM']
+                    )
+                    captured_processes.append(log_entry)
+                    print_process_info(log_entry)
 
 
 def monitor():
@@ -350,9 +499,14 @@ def monitor():
         print("[ERROR] /proc filesystem not found. This script requires Linux.")
         sys.exit(1)
     
+    if MODE not in ('threshold', 'top_n'):
+        print(f"[ERROR] Invalid mode '{MODE}'. Use 'threshold' or 'top_n'.")
+        sys.exit(1)
+    
     total_cpu_time_prev = get_total_cpu_time()
     prev_timestamp = time.time()
     
+    # Initialize CPU measurements for all processes
     for pid in get_all_pids():
         stat = get_process_stat(pid)
         if stat:
@@ -369,77 +523,14 @@ def monitor():
             total_cpu_delta = total_cpu_time - total_cpu_time_prev
             
             pids = get_all_pids()
-            active_pids = set()
+            active_pids = set(pids)
             
-            for pid in pids:
-                active_pids.add(pid)
-                stat = get_process_stat(pid)
-                if not stat:
-                    continue
-                
-                triggered_by = []
-                
-                if TRACK_CPU:
-                    cpu_percent = calculate_cpu_percent(pid, stat, current_time, total_cpu_delta)
-                    if cpu_percent > CPU_THRESHOLD:
-                        triggered_by.append(('CPU', cpu_percent))
-                
-                if TRACK_RAM:
-                    ram_bytes, ram_percent = get_process_memory(pid)
-                    if ram_percent > RAM_THRESHOLD:
-                        triggered_by.append(('RAM', ram_percent, ram_bytes))
-                
-                if triggered_by:
-                    now = datetime.now().strftime("%Y-%m-%d %H:%M:%S")
-                    cmdline = get_process_cmdline(pid)
-                    user = get_process_user(pid)
-                    service = get_systemd_service(pid)
-                    parent_chain = get_parent_chain(pid)
-                    
-                    if not any(t[0] == 'RAM' for t in triggered_by):
-                        ram_bytes, ram_percent = get_process_memory(pid)
-                    else:
-                        ram_item = next((t for t in triggered_by if t[0] == 'RAM'), None)
-                        if ram_item:
-                            ram_percent = ram_item[1]
-                            ram_bytes = ram_item[2]
-                    
-                    if not any(t[0] == 'CPU' for t in triggered_by):
-                        cpu_percent = calculate_cpu_percent(pid, stat, current_time, total_cpu_delta)
-                    else:
-                        cpu_item = next((t for t in triggered_by if t[0] == 'CPU'), None)
-                        if cpu_item:
-                            cpu_percent = cpu_item[1]
-                    
-                    log_entry = {
-                        'timestamp': now,
-                        'pid': pid,
-                        'ppid': stat['ppid'],
-                        'name': stat['name'],
-                        'cpu_percent': round(cpu_percent, 2),
-                        'ram_percent': round(ram_percent, 2),
-                        'ram_bytes': ram_bytes,
-                        'ram_human': format_bytes(ram_bytes),
-                        'cmdline': cmdline,
-                        'user': user,
-                        'service': service,
-                        'parent_chain': [{'pid': p, 'name': n} for p, n in parent_chain],
-                        'triggered_by': [t[0] for t in triggered_by]
-                    }
-                    
-                    captured_processes.append(log_entry)
-                    
-                    trigger_str = '/'.join(t[0] for t in triggered_by)
-                    parent_info = ' -> '.join(f"{n}({p})" for p, n in parent_chain[:3])
-                    
-                    print(f"[{now}] [{trigger_str}] {stat['name']} (PID:{pid})")
-                    print(f"    CPU: {cpu_percent:.1f}% | RAM: {ram_percent:.1f}% ({format_bytes(ram_bytes)})")
-                    print(f"    Service: {service}")
-                    print(f"    User: {user}")
-                    print(f"    Chain: {parent_info}")
-                    print(f"    Cmd: {cmdline[:80]}{'...' if len(cmdline) > 80 else ''}")
-                    print()
+            if MODE == 'threshold':
+                monitor_threshold(pids, current_time, total_cpu_delta)
+            else:  # top_n
+                monitor_top_n(pids, current_time, total_cpu_delta)
             
+            # Cleanup old entries in prev_proc_stats
             dead_pids = set(prev_proc_stats.keys()) - active_pids
             for pid in dead_pids:
                 del prev_proc_stats[pid]

@@ -33,6 +33,8 @@ sudo python3 proc_monitor.py
 
 ```json
 {
+    "mode": "threshold",
+    "top_n": 5,
     "cpu_threshold": 50.0,
     "ram_threshold": 10.0,
     "check_interval": 0.3,
@@ -46,12 +48,24 @@ sudo python3 proc_monitor.py
 
 | Seçenek | Tip | Varsayılan | Açıklama |
 |---------|-----|------------|----------|
-| `cpu_threshold` | float | 50.0 | Tespit için CPU kullanım yüzdesi eşiği |
-| `ram_threshold` | float | 10.0 | Tespit için RAM kullanım yüzdesi eşiği |
+| `mode` | string | "threshold" | Tespit modu: `"threshold"` veya `"top_n"` |
+| `top_n` | int | 5 | İzlenecek en yüksek proses sayısı (sadece `top_n` modunda) |
+| `cpu_threshold` | float | 50.0 | Tespit için CPU kullanım yüzdesi eşiği (sadece `threshold` modunda) |
+| `ram_threshold` | float | 10.0 | Tespit için RAM kullanım yüzdesi eşiği (sadece `threshold` modunda) |
 | `check_interval` | float | 0.3 | Kontroller arası saniye (düşük = daha fazla kısa ömürlü proses yakalar) |
 | `output_file` | string | "resource_report.json" | Rapor dosyasının yolu |
 | `track_cpu` | bool | true | CPU izlemeyi etkinleştir |
 | `track_ram` | bool | true | RAM izlemeyi etkinleştir |
+
+### Modlar
+
+**Threshold (Eşik) Modu** (`"mode": "threshold"`):
+- CPU veya RAM eşiklerini aşan TÜM prosesleri yakalar
+- Bir limiti aşan herhangi bir prosesi yakalamak için idealdir
+
+**Top-N Modu** (`"mode": "top_n"`):
+- CPU ve RAM kullanımına göre en yüksek N prosesi yakalar
+- En yüksek kaynak tüketen proseslerin sürekli izlenmesi için idealdir
 
 `config.json` yoksa varsayılan değerler kullanılır.
 

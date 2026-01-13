@@ -33,6 +33,8 @@ Create a `config.json` file in the same directory as `proc_monitor.py`:
 
 ```json
 {
+    "mode": "threshold",
+    "top_n": 5,
     "cpu_threshold": 50.0,
     "ram_threshold": 10.0,
     "check_interval": 0.3,
@@ -46,12 +48,24 @@ Create a `config.json` file in the same directory as `proc_monitor.py`:
 
 | Option | Type | Default | Description |
 |--------|------|---------|-------------|
-| `cpu_threshold` | float | 50.0 | CPU usage percentage to trigger detection |
-| `ram_threshold` | float | 10.0 | RAM usage percentage to trigger detection |
+| `mode` | string | "threshold" | Detection mode: `"threshold"` or `"top_n"` |
+| `top_n` | int | 5 | Number of top processes to track (only for `top_n` mode) |
+| `cpu_threshold` | float | 50.0 | CPU usage percentage to trigger detection (only for `threshold` mode) |
+| `ram_threshold` | float | 10.0 | RAM usage percentage to trigger detection (only for `threshold` mode) |
 | `check_interval` | float | 0.3 | Seconds between each check (lower = catch more short-lived processes) |
 | `output_file` | string | "resource_report.json" | Path to save the report |
 | `track_cpu` | bool | true | Enable CPU monitoring |
 | `track_ram` | bool | true | Enable RAM monitoring |
+
+### Modes
+
+**Threshold Mode** (`"mode": "threshold"`):
+- Captures ALL processes that exceed the CPU or RAM thresholds
+- Best for catching any process that crosses a limit
+
+**Top-N Mode** (`"mode": "top_n"`):
+- Captures the top N processes by CPU and RAM usage
+- Best for continuous monitoring of highest resource consumers
 
 If `config.json` doesn't exist, default values are used.
 
